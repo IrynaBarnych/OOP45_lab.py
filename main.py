@@ -35,7 +35,7 @@ def insert_row(table: metadata):
 
     values = {}
     for columns in columns:
-        value = input(f"Введіть значення для колонки {columns}")
+        value = input(f"Введіть значення для колонки {columns} ")
         values[columns] = value
     query = insert(table).values(values)
     conn.execute(query)
@@ -100,9 +100,9 @@ while True:
         table = metadata.tables[table_name]
         print(f"Ви обрали таблицю {table_name}")
 
-        print("1. Вставити рядки")
-        print("2. Оновити рядки")
-        print("3. Видалити рядки")
+        print("1. Вставити рядки ")
+        print("2. Оновити рядки ")
+        print("3. Видалити рядки ")
         print("0. Вийти")
 
         choice = input("Оберіть опцію: ")
