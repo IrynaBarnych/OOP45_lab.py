@@ -17,15 +17,16 @@ engine = create_engine(db_url)
 
 #оголошення базового класу
 Base = declarative_base()
-# #визначення класу моделі
-# class Person(Base):
-#     __tablename__ = 'people'
-#     id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
-#     first_name = Column(String(50))
-#     last_name = Column(String(50))
-#     city = Column(String(50))
-#     country = Column(String(50))
-#     birth_date = Column(Date)
+
+#визначення класу моделі
+class Person(Base):
+    __tablename__ = 'people'
+    id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
+    first_name = Column(String(50))
+    last_name = Column(String(50))
+    city = Column(String(50))
+    country = Column(String(50))
+    birth_date = Column(Date)
 
 #створення таблиці
 Base.metadata.create_all(engine)
@@ -33,12 +34,14 @@ Base.metadata.create_all(engine)
 #створення сесії та додавання запису
 Session = sessionmaker(bind=engine)
 session = Session()
-# #додавання інформації
-# person1 = Person(first_name='John', last_name='Doe', city='New York', country='USA', birth_date='1990-01-15')
-# person2 = Person(first_name='Jane', last_name='Smith', city='London', country='UK', birth_date='1985-03-22')
-#
+
+#додавання інформації
+person1 = Person(first_name='John', last_name='Doe', city='New York', country='USA', birth_date='1990-01-15')
+person2 = Person(first_name='Jane', last_name='Smith', city='London', country='UK', birth_date='1985-03-22')
+
 # session.add_all([person1, person2])
 # session.commit()
+
 #програма для виконання select-запитів
 while True:
     user_query = input("Введіть вас select-запит exit  - вихід")
@@ -54,4 +57,5 @@ while True:
         print("Операція успішно виконана!")
     except Exception as e:
         print(f"Помилка виконання запиту: {e}")
+
 session.close()
