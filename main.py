@@ -1,23 +1,20 @@
 from sqlalchemy import create_engine, Column, Integer, String, Sequence, Date, and_, or_
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import insert, update, delete
-import json  # Add this line to import the json module
+import json
 
-# Зчитування конфігураційних даних з файлу
+# Отримання логіну та паролю з об'єкта конфігурації
 with open('config.json') as f:
     config = json.load(f)
 
-# Отримання логіну та паролю з об'єкта конфігурації
 db_user = config['user']
 db_password = config['password']
 
 db_url = f'postgresql+psycopg2://{db_user}:{db_password}@localhost:5432/People'
 engine = create_engine(db_url)
 
-# Оголошення базового класу
 Base = declarative_base()
 
-# Визначення класу моделі
 class Person(Base):
     __tablename__ = 'people'
     id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
@@ -27,72 +24,21 @@ class Person(Base):
     country = Column(String(50))
     birth_date = Column(Date)
 
-# Створення таблиці
 Base.metadata.create_all(engine)
 
-# Створення сесії та додавання запису
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Функції для вставки, оновлення та видалення записів
-def insert_row(session, table):
-    columns = table.columns.keys()
+def save_to_file(filename, data):
+    with open(filename, 'w') as file:
+        for item in data:
+            file.write(f"{item.first_name} {item.last_name}, {item.city}, {item.country}, {item.birth_date}\n")
 
-    values = {}
-    for column in columns:
-        value = input(f"Введіть значення для колонки {column}: ")
-        values[column] = value
+def apply_filter_and_save(session, filter_condition, filename):
+    result = session.query(Person).filter(filter_condition).all()
+    save_to_file(filename, result)
+    print(f"Результати фільтрації збережено у файл {filename}")
 
-    session.execute(insert(table).values(values))
-    session.commit()
-
-    print("Рядок успішно додано!")
-
-def update_row(session, table):
-    columns = table.columns.keys()
-    print("Доступні колонки для оновлення: ")
-    for idx, column in enumerate(columns, start=1):
-        print(f"{idx}.{column}")
-    selected_column_idx = int(input("Введіть номер колонки для оновлення: "))
-
-    if 1 <= selected_column_idx <= len(columns):
-        condition_column = columns[selected_column_idx - 1]
-    else:
-        print("Невірний номер колонки!")
-
-    condition_value = input(f"Введіть значення для умови, {condition_column}: ")
-    new_values = {}
-    for column in columns:
-        value = input(f"Введіть значення для колонки {column}: ")
-        new_values[column] = value
-
-    confirm_update = input("Оновити усі рядки? у/н? ")
-    if confirm_update.lower() == 'y':
-        session.execute(update(table).where(getattr(table.c, condition_column) == condition_value).values(new_values))
-        session.commit()
-        print("Рядок(и) успішно оновлено!")
-
-def delete_row(session, table):
-    columns = table.columns.keys()
-    print("Доступні колонки для видалення: ")
-    for idx, column in enumerate(columns, start=1):
-        print(f"{idx}.{column}")
-    selected_column_idx = int(input("Введіть номер колонки для умови видалення: "))
-
-    if 1 <= selected_column_idx <= len(columns):
-        condition_column = columns[selected_column_idx - 1]
-    else:
-        print("Невірний номер колонки! Видалення відмінено!")
-
-    condition_value = input(f"Введіть значення для умови, {condition_column}: ")
-
-    confirm_delete = input("Видалити усі рядки з цієї таблиці? у/н? ")
-    if confirm_delete.lower() == 'y':
-        session.execute(delete(table).where(getattr(table.c, condition_column) == condition_value))
-        session.commit()
-        print("Рядок(и) успішно видалено!")
-
-# Головний цикл програми
 while True:
     print("Оберіть опцію:")
     print("1. Показати всіх людей")
@@ -102,6 +48,7 @@ while True:
     print("5. Вставити новий рядок")
     print("6. Оновити рядок")
     print("7. Видалити рядок")
+    print("8. Зберегти результати фільтру у файл")
     print("0. Вихід")
 
     option = input("Ваш вибір: ")
@@ -133,6 +80,9 @@ while True:
         update_row(session, Person.__table__)
     elif option == "7":
         delete_row(session, Person.__table__)
+    elif option == "8":
+        filename = input("Введіть ім'я файлу для збереження результатів фільтру: ")
+        apply_filter_and_save(session, and_(), filename)
     else:
         print("Невірний вибір. Спробуйте ще раз.")
         continue
