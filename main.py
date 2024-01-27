@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Sequence, Date, and_, or_
 from sqlalchemy.orm import sessionmaker, declarative_base
-import json  # Import the json module
+from sqlalchemy import insert, update, delete
+import json  # Add this line to import the json module
 
 # Зчитування конфігураційних даних з файлу
 with open('config.json') as f:
@@ -33,19 +34,74 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Додавання інформації
-person1 = Person(first_name='John', last_name='Doe', city='New York', country='USA', birth_date='1990-01-15')
-person2 = Person(first_name='Jane', last_name='Smith', city='London', country='UK', birth_date='1985-03-22')
-session.add_all([person1, person2])
-session.commit()
+# Функції для вставки, оновлення та видалення записів
+def insert_row(session, table):
+    columns = table.columns.keys()
 
-# Програма для виконання готових фільтрів
+    values = {}
+    for column in columns:
+        value = input(f"Введіть значення для колонки {column}: ")
+        values[column] = value
+
+    session.execute(insert(table).values(values))
+    session.commit()
+
+    print("Рядок успішно додано!")
+
+def update_row(session, table):
+    columns = table.columns.keys()
+    print("Доступні колонки для оновлення: ")
+    for idx, column in enumerate(columns, start=1):
+        print(f"{idx}.{column}")
+    selected_column_idx = int(input("Введіть номер колонки для оновлення: "))
+
+    if 1 <= selected_column_idx <= len(columns):
+        condition_column = columns[selected_column_idx - 1]
+    else:
+        print("Невірний номер колонки!")
+
+    condition_value = input(f"Введіть значення для умови, {condition_column}: ")
+    new_values = {}
+    for column in columns:
+        value = input(f"Введіть значення для колонки {column}: ")
+        new_values[column] = value
+
+    confirm_update = input("Оновити усі рядки? у/н? ")
+    if confirm_update.lower() == 'y':
+        session.execute(update(table).where(getattr(table.c, condition_column) == condition_value).values(new_values))
+        session.commit()
+        print("Рядок(и) успішно оновлено!")
+
+def delete_row(session, table):
+    columns = table.columns.keys()
+    print("Доступні колонки для видалення: ")
+    for idx, column in enumerate(columns, start=1):
+        print(f"{idx}.{column}")
+    selected_column_idx = int(input("Введіть номер колонки для умови видалення: "))
+
+    if 1 <= selected_column_idx <= len(columns):
+        condition_column = columns[selected_column_idx - 1]
+    else:
+        print("Невірний номер колонки! Видалення відмінено!")
+
+    condition_value = input(f"Введіть значення для умови, {condition_column}: ")
+
+    confirm_delete = input("Видалити усі рядки з цієї таблиці? у/н? ")
+    if confirm_delete.lower() == 'y':
+        session.execute(delete(table).where(getattr(table.c, condition_column) == condition_value))
+        session.commit()
+        print("Рядок(и) успішно видалено!")
+
+# Головний цикл програми
 while True:
     print("Оберіть опцію:")
     print("1. Показати всіх людей")
     print("2. Показати людей з одного міста")
     print("3. Показати людей з однієї країни")
     print("4. Показати людей за комплексним фільтром")
+    print("5. Вставити новий рядок")
+    print("6. Оновити рядок")
+    print("7. Видалити рядок")
     print("0. Вихід")
 
     option = input("Ваш вибір: ")
@@ -64,7 +120,6 @@ while True:
         city_filter = input("Введіть назву міста (або залиште порожнім, якщо не хочете фільтрувати за містом): ")
         country_filter = input("Введіть назву країни (або залиште порожнім, якщо не хочете фільтрувати за країною): ")
 
-        # Складаємо комплексний фільтр з умов АБО
         complex_filter = or_(
             and_(Person.city == city_filter, Person.country == country_filter),
             and_(Person.city == city_filter, country_filter == ""),
@@ -72,6 +127,12 @@ while True:
         )
 
         result = session.query(Person).filter(complex_filter).all()
+    elif option == "5":
+        insert_row(session, Person.__table__)
+    elif option == "6":
+        update_row(session, Person.__table__)
+    elif option == "7":
+        delete_row(session, Person.__table__)
     else:
         print("Невірний вибір. Спробуйте ще раз.")
         continue
